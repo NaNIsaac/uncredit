@@ -34,6 +34,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/uncredit"]
 
+[tool.pr-land]
+test-command = "uv run --with pytest pytest -q -p no:cacheprovider --basetemp {basetemp}"
+
 [tool.ruff]
 line-length = 100
 
