@@ -7,9 +7,43 @@ on:
     tags:
       - 'v*'
       - 'git-deai-v*'
+  # Runs the gates alone, without an upload, to check them off a tag.
+  workflow_dispatch:
 
 jobs:
+  # The gates take the version from a tag named v<version>, so they check uncredit only;
+  # a git-deai-v* tag skips them and builds legacy/git-deai as before.
+  gates:
+    if: "!startsWith(github.ref_name, 'git-deai-v')"
+    uses: NaNIsaac/.github/.github/workflows/publish-gates.yml@e2bfb9b4aa7820e8efe43afddf2d2308c6069ae3
+    permissions:
+      contents: read
+    with:
+      import-name: uncredit
+      test-command: uv run --with pytest pytest -q
+      smoke: uncredit --help
+      # placeholder home folder in the README's sample output (and in this file, which the sdist carries)
+      path-allowlist: |
+        /home/me
+
   publish:
+    needs: gates
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write  # PyPI Trusted Publishing
+      contents: read
+    steps:
+      # The files the gates checked, not a new build
+      - uses: actions/download-artifact@v8
+        with:
+          name: publish-gates-dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-git-deai:
+    if: startsWith(github.ref, 'refs/tags/git-deai-v')
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -18,10 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.3
-      - if: startsWith(github.ref_name, 'v')
-        run: uv build --out-dir dist
-      - if: startsWith(github.ref_name, 'git-deai-v')
-        run: uv build --project legacy/git-deai --out-dir dist
+      - run: uv build --project legacy/git-deai --out-dir dist
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
