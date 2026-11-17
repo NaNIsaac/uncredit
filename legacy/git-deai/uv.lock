@@ -1,0 +1,23 @@
+version = 1
+revision = 3
+requires-python = ">=3.10"
+
+[[package]]
+name = "git-deai"
+version = "0.3.0"
+source = { editable = "." }
+dependencies = [
+    { name = "uncredit" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "uncredit", specifier = ">=0.3.0" }]
+
+[[package]]
+name = "uncredit"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/6f/59425f1dba5e764d259ed9510b71f6b8af243a0a7e22a7b76d19940e796a/uncredit-0.3.0.tar.gz", hash = "sha256:a4e40ee36aaa0b0a173ebfa62489c56a7d6d101a0caa5ad7e951cfe8be7e100a", size = 132858, upload-time = "2026-11-05T21:47:14.759Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c4/cb/e34060e889548efd4c941c3a7cfc23adbf2d9d3dc3b5e20be5812f69095a/uncredit-0.3.0-py3-none-any.whl", hash = "sha256:e5f314b904fd716d04a7b9e9b111f8d2d9d9b119f4f8b4a9b8843d2e81973eda", size = 15872, upload-time = "2026-11-05T21:47:13.388Z" },
+]
