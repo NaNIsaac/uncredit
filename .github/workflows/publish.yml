@@ -7,15 +7,20 @@ on:
     tags:
       - 'v*'
       - 'git-deai-v*'
-  # Runs the gates alone, without an upload, to check them off a tag.
+  # Runs the gates of one package alone, without an upload, to check them off a tag.
   workflow_dispatch:
+    inputs:
+      package:
+        description: Package whose gates run
+        type: choice
+        options: [uncredit, git-deai]
+        default: uncredit
 
 jobs:
-  # The gates take the version from a tag named v<version>, so they check uncredit only;
-  # a git-deai-v* tag skips them and builds legacy/git-deai as before.
+  # Each run checks one package: both gate calls name their files publish-gates-dist.
   gates:
-    if: "!startsWith(github.ref_name, 'git-deai-v')"
-    uses: NaNIsaac/.github/.github/workflows/publish-gates.yml@e2bfb9b4aa7820e8efe43afddf2d2308c6069ae3
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.package == 'uncredit'
+    uses: NaNIsaac/.github/.github/workflows/publish-gates.yml@9e87afaf228b87917fb071b4a86b1f10403fe0d5
     permissions:
       contents: read
     with:
@@ -25,6 +30,19 @@ jobs:
       # placeholder home folder in the README's sample output (and in this file, which the sdist carries)
       path-allowlist: |
         /home/me
+
+  gates-git-deai:
+    if: startsWith(github.ref, 'refs/tags/git-deai-v') || inputs.package == 'git-deai'
+    uses: NaNIsaac/.github/.github/workflows/publish-gates.yml@9e87afaf228b87917fb071b4a86b1f10403fe0d5
+    permissions:
+      contents: read
+    with:
+      import-name: git_deai_legacy
+      package-dir: legacy/git-deai
+      tag-prefix: git-deai-v
+      # the package has no tests of its own; its one command must start uncredit
+      test-command: uv run deai --help
+      smoke: deai --help
 
   publish:
     needs: gates
@@ -43,6 +61,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
 
   publish-git-deai:
+    needs: gates-git-deai
     if: startsWith(github.ref, 'refs/tags/git-deai-v')
     runs-on: ubuntu-latest
     environment: release
@@ -50,9 +69,8 @@ jobs:
       id-token: write  # PyPI Trusted Publishing
       contents: read
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.3
-      - run: uv build --project legacy/git-deai --out-dir dist
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: actions/download-artifact@v8
         with:
-          packages-dir: dist/
+          name: publish-gates-dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
